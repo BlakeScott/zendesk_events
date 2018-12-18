@@ -39,7 +39,7 @@ function orgs_from_gcal() {
     echo "<br>";
     return $orgs_from_gcal;
 }
-orgs_from_gcal();
+// orgs_from_gcal();
 
 
 //Determine whether to add internal comments, or to just expire what's currently in the view.
@@ -116,7 +116,7 @@ function addComment() {
       }
 
       catch (\Zendesk\API\Exceptions\ApiResponseException $e) {
-        echo $e->getMessage().'</br>';
+        echo "API Response (if there is a 400 bad response, likely no calendar events): ".$e->getMessage().'</br>';
      }
   }
     print_r($matching_org_ids);
@@ -155,3 +155,4 @@ function drush_zendesk_events_zd_command()
         echo $e->getMessage().'</br>';
     }
 }
+*/
