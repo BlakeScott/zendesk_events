@@ -116,7 +116,7 @@ function addComment() {
       }
 
       catch (\Zendesk\API\Exceptions\ApiResponseException $e) {
-        echo "API Response (if there is a 400 bad response, likely no calendar events): ".$e->getMessage().'</br>';
+        echo "API Response (if there is a 400 bad response, calendar/ticket matches): ".$e->getMessage().'</br>';
      }
   }
     print_r($matching_org_ids);
