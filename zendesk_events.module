@@ -129,3 +129,15 @@ function addComment() {
 addComment();
 
 
+//This is where the master function should live in the `.module` file. When you call  `drush zd-command`  the PHP code will run in this function.
+function drush_zendesk_events_zd_command()
+{
+    //Instantiate the ZD client
+    zendesk_client_init();
+    //Take the TICKET IDs from Google Calendar and grab their ORG IDs from Zendesk.
+    orgs_from_gcal();
+    // Put in here the master function you want drush to run.
+    addComment();
+ }
+
+ //drush_zendesk_events_zd_command();
