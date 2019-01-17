@@ -3,7 +3,7 @@
 require_once DRUPAL_ROOT . '/sites/all/modules/custom/zendesk_events/zendesk_api_client/vendor/autoload.php';
 use Zendesk\API\HttpClient as ZendeskAPI;
 
-
+// Initalizes the ZD Client
 function zendesk_client_init() {
 
     $subdomain = variable_get('zendesk_events_zd_api_subdomain', FALSE);
@@ -20,8 +20,6 @@ function zendesk_client_init() {
     }
 }
 zendesk_client_init();
-
-
 
 //Take the TICKET IDs from Google Calendar and grab their ORG IDs from Zendesk.
 function orgs_from_gcal() {
@@ -45,27 +43,23 @@ function orgs_from_gcal() {
 }
 // orgs_from_gcal();
 
-
 //Determine whether to add internal comments, or to just expire what's currently in the view.
 function addComment() {
     $client = zendesk_client_init();
     $gcal_orgs = orgs_from_gcal();
     // Return all tickets from our custom Zendesk view.
     $tickets_from_zd_view = $client->views(360049656394)->tickets();
-
     //Grab the TICKET IDs for each ticket, put them in an array, then print the result.
     $zd_ticket_ids = array_column($tickets_from_zd_view->tickets, 'id');
     echo "<br>";
     print_r("These are all the TICKET IDs from our Zendesk View:  ");
     print_r($zd_ticket_ids);
-
     //Grab the ORG IDs for each ticket, put them in an array, then print the result.
     $zd_ticket_orgs = array_column($tickets_from_zd_view->tickets, 'organization_id');
     echo "<br>";
     print_r("These are all the ORG IDs from our Zendesk View:  ");
     print_r($zd_ticket_orgs);
     echo "<br>";
-
     //Find ORG ID matches between Google Calendar and the Zendesk view.
     $matching_org_ids = array_intersect($zd_ticket_orgs, $gcal_orgs);
 
@@ -81,7 +75,6 @@ function addComment() {
             $z = array_push($array, $x);
 
             if(in_array($y, $gcal_orgs)) {
-
                 print_r("Adding Comment and Tag");
                 $client->tickets()->updateMany( [
                         'ids'    => $array,
@@ -91,16 +84,12 @@ function addComment() {
                                 ],
                         'additional_tags' => ['checked'],
                     ]);
-
             }
             else {
                 //print_r("Just adding Tag.");
-
                 $client->tickets()->updateMany( [
-
                     'ids'    => $zd_ticket_ids,
                     'additional_tags' => ['checked'],
-
                 ]);
 
             }
@@ -115,10 +104,8 @@ function addComment() {
 
             'ids' => $zd_ticket_ids,
             'additional_tags' => ['checked'],
-
          ]);
       }
-
       catch (\Zendesk\API\Exceptions\ApiResponseException $e) {
         echo "API Response (if there is a 400 bad response, calendar/ticket matches): ".$e->getMessage().'</br>';
      }
@@ -127,7 +114,6 @@ function addComment() {
     return $matching_org_ids;
 }
 addComment();
-
 
 //This is where the master function should live in the `.module` file. When you call  `drush zd-command`  the PHP code will run in this function.
 function drush_zendesk_events_zd_command()
@@ -139,5 +125,4 @@ function drush_zendesk_events_zd_command()
     // Put in here the master function you want drush to run.
     addComment();
  }
-
  //drush_zendesk_events_zd_command();
