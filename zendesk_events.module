@@ -128,35 +128,4 @@ function addComment() {
 }
 addComment();
 
-/*
-//This is where the master function should live in the `.module` file. When you call  `drush zd-command`  the PHP code will run in this function.
-function drush_zendesk_events_zd_command()
-{
-    // Put in here the master function you want drush to run.
-    addComment();
- }
 
- drush_zendesk_events_zd_command();
-*/
-
-/*
- function addComment($array_of_customer_events)
-{
-    $client = zendesk_client_init();
-    try {
-      $updatedTickets = $client->tickets()->update(
-          [
-              'id'    => $array_of_customer_events,
-              'comment'  => [
-                             'body' => '(Hi Supporta! This customer may be having a High Traffic event right now. Please check the `Customers` calendar for more information',
-                             'public' => false,
-                         ],
-          ]
-      );
-    }
-
-    catch (\Zendesk\API\Exceptions\ApiResponseException $e) {
-        echo $e->getMessage().'</br>';
-    }
-}
-*/
