@@ -4,17 +4,21 @@ require_once DRUPAL_ROOT . '/sites/all/modules/custom/zendesk_events/zendesk_api
 use Zendesk\API\HttpClient as ZendeskAPI;
 
 
-// Initalizes the ZD Client
 function zendesk_client_init() {
-    $subdomain = "acquia1457030485";
-    $username  = "blake.scott@acquia.com"; // replace this with your registered email
-    $token     = "xlHUq4xOk4KI8IjBUWHw0CIwq7MeXPx3KFCACw8m"; // replace this with your token
 
+    $subdomain = variable_get('zendesk_events_zd_api_subdomain', FALSE);
+    $username = variable_get('zendesk_events_zd_api_user', FALSE);
+    $token = variable_get('zendesk_events_zd_api_token', FALSE);
+    
+    if (!$subdomain || !$username || !$token) {
+      throw new \Exception("Fatal: This script requires you to configure a Zendesk API endpoint and user. Please do this by setting the 'zendesk_events_zd_api_subdomain', 'zendesk_events_zd_api_user', and 'zendesk_events_zd_api_token' variables.");
+    }
+    else {
     $client = new ZendeskAPI($subdomain);
     $client->setAuth('basic', ['username' => $username, 'token' => $token]);
     return $client;
+    }
 }
-//Instantiate the ZD client
 zendesk_client_init();
 
 
