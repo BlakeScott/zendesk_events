@@ -129,12 +129,16 @@ function drush_zendesk_events_zd_command()
 
  function event_tickets_from_zendesk() {
     $client = zendesk_client_init();
+    # how long, in seconds, should these cached objects last?
+    $cache_lifetime = 3600;
+    # establish the current time as a unix timestamp.
+    $current_time = time();
 
     $tickets_from_events_view = $client->views(360068822093)->tickets();
+    $new_events_notification_array = array();
 
     foreach($tickets_from_events_view->tickets as $ticket) {
-           $new_events_notification_array = array();
-
+           $ticket_info = array();
            $id = $ticket->id;
            $org_id = $ticket->organization_id;
            $subject =  $ticket->subject;
@@ -147,8 +151,11 @@ function drush_zendesk_events_zd_command()
                  $end_date = $custom_field->value;
              } else return;
            }
-            print_r("<br>Ticket ID: " . $id . " Organization Id: " . $org_id . " Description: " . $description . " Subject: " . $subject . " Start Date: " . $start_date . " End Date: " . $end_date);
+           array_push($ticket_info, $id, $subject, $description,$start_date, $end_date);
+           array_push($new_events_notification_array, $ticket_info);
         }
+        // print_r($new_events_notification_array);
+        cache_set('cached_event_tickets', $new_events_notification_array, 'cache', $current_time + $cache_lifetime);
 }
 
 // event_tickets_from_zendesk();
