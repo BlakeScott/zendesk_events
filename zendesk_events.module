@@ -145,17 +145,17 @@ function drush_zendesk_events_zd_command()
            $description = $ticket->description;
 
            foreach($ticket->custom_fields as $custom_field){
-             if ($custom_field->id = 360014930173) {
+             if ($custom_field->id == 360016075373) {
                  $start_date = $custom_field->value;
-             } if ($custom_field->id = 360014963894) {
+             } else if ($custom_field->id == 360016075393) {
                  $end_date = $custom_field->value;
-             } else return;
+             } continue;
            }
-           array_push($ticket_info, $id, $subject, $description,$start_date, $end_date);
+           array_push($ticket_info, $id, $subject, $description, $start_date, $end_date);
            array_push($new_events_notification_array, $ticket_info);
         }
-        // print_r($new_events_notification_array);
+        print_r($new_events_notification_array);
         cache_set('cached_event_tickets', $new_events_notification_array, 'cache', $current_time + $cache_lifetime);
 }
 
-// event_tickets_from_zendesk();
+event_tickets_from_zendesk();
