@@ -158,4 +158,4 @@ function drush_zendesk_events_zd_command()
         cache_set('cached_event_tickets', $new_events_notification_array, 'cache', $current_time + $cache_lifetime);
 }
 
-event_tickets_from_zendesk();
+// event_tickets_from_zendesk();
