@@ -2,3 +2,4 @@ name = Zendesk Events
 description = A module that makes API calls to Zendesk.
 core = 7.x
 dependencies[] = calendar_events
+configure = admin/config/zendesk_events
