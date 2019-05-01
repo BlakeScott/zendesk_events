@@ -26,20 +26,36 @@ function orgs_from_gcal() {
     $client = zendesk_client_init();
     //Grab the current calendar_events.module generated TICKET IDs from cache.
     // ****Add code that Aaron Senecal wrote to determine the freshness of the data.*****
-    $data = cache_get('cached_gcal_data');
-    $seed_tickets = array_values($data->data);
     $orgs_from_gcal = array();
-    foreach($seed_tickets as $ticket) {
-      $x = $client->tickets()->find($ticket);
-      $y = $x->ticket->organization_id;
-      $z = array_push($orgs_from_gcal, $y);
+    $data = cache_get('cached_gcal_data');
+    if ($data != null) {
+      $seed_tickets = array_values($data->data);
+      // $orgs_from_gcal = array();
+      foreach($seed_tickets as $ticket) {
+        $x = $client->tickets()->find($ticket);
+        $y = $x->ticket->organization_id;
+        $z = array_push($orgs_from_gcal, $y);
+      }
+      //print the result
+      echo "<br>";
+      print_r('These are the ORG IDs for the current events: ');
+      var_dump($orgs_from_gcal);
+      echo "<br>";
+      return $orgs_from_gcal;
     }
-    //print the result
-    echo "<br>";
-    print_r('These are the ORG IDs for the current events: ');
-    var_dump($orgs_from_gcal);
-    echo "<br>";
-    return $orgs_from_gcal;
+    // $seed_tickets = array_values($data->data);
+    // $orgs_from_gcal = array();
+    // foreach($seed_tickets as $ticket) {
+    //   $x = $client->tickets()->find($ticket);
+    //   $y = $x->ticket->organization_id;
+    //   $z = array_push($orgs_from_gcal, $y);
+    // }
+    // //print the result
+    // echo "<br>";
+    // print_r('These are the ORG IDs for the current events: ');
+    // var_dump($orgs_from_gcal);
+    // echo "<br>";
+    // return $orgs_from_gcal;
 }
 // orgs_from_gcal();
 
@@ -115,15 +131,15 @@ function addComment() {
 addComment();
 
 //This is where the master function should live in the `.module` file. When you call  `drush zd-command`  the PHP code will run in this function.
-function drush_zendesk_events_zd_command()
-{
-    //Instantiate the ZD client
-    zendesk_client_init();
-    //Take the TICKET IDs from Google Calendar and grab their ORG IDs from Zendesk.
-    orgs_from_gcal();
-    // Put in here the master function you want drush to run.
-    addComment();
- }
+// function drush_zendesk_events_zd_command()
+// {
+//     //Instantiate the ZD client
+//     zendesk_client_init();
+//     //Take the TICKET IDs from Google Calendar and grab their ORG IDs from Zendesk.
+//     orgs_from_gcal();
+//     // Put in here the master function you want drush to run.
+//     addComment();
+//  }
  //drush_zendesk_events_zd_command();
 
  function event_tickets_from_zendesk() {
@@ -132,7 +148,7 @@ function drush_zendesk_events_zd_command()
     $cache_lifetime = 3600;
     # establish the current time as a unix timestamp.
     $current_time = time();
-
+    // WILL NEED TO ADD NEW VIEW WITH TICKET TYPE EVENT
     $tickets_from_events_view = $client->views(360068822093)->tickets();
     $new_events_notification_array = array();
     $tickets_to_close = array();
@@ -176,4 +192,10 @@ function drush_zendesk_events_zd_command()
     }
   }
 
-// event_tickets_from_zendesk();
+event_tickets_from_zendesk();
+
+// function drush_zendesk_events_fetch()
+// {
+//     //GET Zendesk Tickets with Event Type
+//     event_tickets_from_zendesk();
+//  }

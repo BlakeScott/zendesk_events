@@ -10,3 +10,12 @@ function zendesk_events_drush_command(){
     );
    return $items;
 }
+
+function zendesk_events_fetch(){
+     $items['zd-eventsfetch'] = array(
+      'description' => 'Fetches Zendesk Events.',
+      'aliases' => array('zdf'),
+      'drush zd-eventsfetch' => 'Triggers the internal note and tags for ZenDesk'
+    );
+   return $items;
+}
