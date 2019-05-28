@@ -2,20 +2,16 @@
 /**
  * Implements hook_drush_command().
  */
-function zendesk_events_drush_command(){
-     $items['zd-command'] = array(
+ function zendesk_events_drush_command(){
+    $items['zd-command'] = array(
       'description' => 'Demonstrate how Drush commands work.',
       'aliases' => array('dzc'),
       'drush zd-command' => 'Triggers the internal note and tags for ZenDesk'
     );
-   return $items;
-}
-
-function zendesk_events_fetch(){
-     $items['zd-eventsfetch'] = array(
+     $items['zd-fetch'] = array(
       'description' => 'Fetches Zendesk Events.',
       'aliases' => array('zdf'),
-      'drush zd-eventsfetch' => 'Triggers the internal note and tags for ZenDesk'
+      'drush zd-fetch' => 'Triggers the internal note and tags for ZenDesk'
     );
-   return $items;
-}
+    return $items;
+ }
