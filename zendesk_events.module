@@ -1,168 +1,168 @@
 <?php
 
-require_once DRUPAL_ROOT . '/sites/all/modules/custom/zendesk_events/vendor/autoload.php';
-use Zendesk\API\HttpClient as ZendeskAPI;
-
-// Initalizes the ZD Client
-function zendesk_client_init() {
-
-    $subdomain = variable_get('zendesk_events_zd_api_subdomain', FALSE);
-    $username = variable_get('zendesk_events_zd_api_user', FALSE);
-    $token = variable_get('zendesk_events_zd_api_token', FALSE);
-
-    if (!$subdomain || !$username || !$token) {
-      throw new \Exception("Fatal: This script requires you to configure a Zendesk API endpoint and user. Please do this by setting the 'zendesk_events_zd_api_subdomain', 'zendesk_events_zd_api_user', and 'zendesk_events_zd_api_token' variables.");
-    }
-    else {
-    $client = new ZendeskAPI($subdomain);
-    $client->setAuth('basic', ['username' => $username, 'token' => $token]);
-    return $client;
-    }
-}
+// require_once DRUPAL_ROOT . '/sites/all/modules/custom/zendesk_events/vendor/autoload.php';
+// use Zendesk\API\HttpClient as ZendeskAPI;
+//
+// // Initalizes the ZD Client
+// function zendesk_client_init() {
+//
+//     $subdomain = variable_get('zendesk_events_zd_api_subdomain', FALSE);
+//     $username = variable_get('zendesk_events_zd_api_user', FALSE);
+//     $token = variable_get('zendesk_events_zd_api_token', FALSE);
+//
+//     if (!$subdomain || !$username || !$token) {
+//       throw new \Exception("Fatal: This script requires you to configure a Zendesk API endpoint and user. Please do this by setting the 'zendesk_events_zd_api_subdomain', 'zendesk_events_zd_api_user', and 'zendesk_events_zd_api_token' variables.");
+//     }
+//     else {
+//     $client = new ZendeskAPI($subdomain);
+//     $client->setAuth('basic', ['username' => $username, 'token' => $token]);
+//     return $client;
+//     }
+// }
 // zendesk_client_init();
 
 //Take the TICKET IDs from Google Calendar and grab their ORG IDs from Zendesk.
-function orgs_from_gcal() {
-  try {
-    $client = zendesk_client_init();
-    $seed_tickets= [];
-    // Grab the current calendar_events.module generated TICKET IDs from cache.
-    $data = cache_get('cached_gcal_data');
-    if (empty($data) == FALSE){
-      $seed_tickets = array_values($data->data);
-    }
-    $orgs_from_gcal = array();
-    // Get Org IDs from tickets in the view.
-    foreach ($seed_tickets as $ticket) {
-      $x = $client->tickets()->find($ticket);
-      $y = $x->ticket->organization_id;
-      $z = array_push($orgs_from_gcal, $y);
-    }
-  }
-  catch (ApiResponseException $e) {
-    watchdog('zendesk_events', 'Grabbing org IDs from Gcal events.');
-  }
-  return $orgs_from_gcal;
-}
-/**
- * Add internal comments or just expire what's currently in the view.
- */
-function add_comment() {
-  $client = zendesk_client_init();
-  $gcal_orgs = orgs_from_gcal();
-  // Return all tickets from our custom Zendesk view.
-  $tickets_from_zd_view = $client->views(360068822093)->tickets();
-  // Grab TICKET IDs for each ticket, put them in an array, then print result.
-  $zd_ticket_ids = array_column($tickets_from_zd_view->tickets, 'id');
-  // Add some logging.
-  print "New Tickets to the queue: \n";
-  print_r($zd_ticket_ids);
-  // Grab ORG IDs for each ticket, put them in an array, then print result.
-  $zd_ticket_orgs = array_column($tickets_from_zd_view->tickets, 'organization_id');
-  // Find ORG ID matches between Google Calendar and the Zendesk view.
-  $matching_org_ids = array_intersect($zd_ticket_orgs, $gcal_orgs);
-  if (empty($matching_org_ids) == FALSE) {
-    // For tickets that have matches, Send update & tag ticket as event:yes.
-    foreach ($tickets_from_zd_view->tickets as $ticket) {
-      $array = array();
-      $x = $ticket->id;
-      $y = $ticket->organization_id;
-      $z = array_push($array, $x);
-      if (in_array($y, $gcal_orgs)) {
-        $client->tickets()->updateMany([
-          'ids'    => $array,
-          'comment'  => [
-            'body' => "**Automated Ticket Notification**
-                                    This customer may be having a High Traffic event right now. Please check the `Customers` calendar for more information.",
-                        // Eventually add original ticket details here
-                        // Associated Event Notification ticket: #$ticket->id
-                        // Title of Associated Ticket: $ticket->subject,.
-            'public' => FALSE,
-          ],
-          'additional_tags' => ['event:yes'],
-        ]);
-        watchdog('zendesk_events', 'There are event/ticket matches.');
-        print "Tickets with Event Matches: \n";
-        print_r($array);
-      }
-    }
-  }
-  if (empty($matching_org_ids) && empty($zd_ticket_ids) == FALSE) {
-    // No match, set event:no tag.
-      $client->tickets()->updateMany([
-        'ids' => $zd_ticket_ids,
-        'additional_tags' => ['event:no'],
-      ]);
-  }
-  return $matching_org_ids;
-}
+// function orgs_from_gcal() {
+//   try {
+//     $client = zendesk_client_init();
+//     $seed_tickets= [];
+//     // Grab the current calendar_events.module generated TICKET IDs from cache.
+//     $data = cache_get('cached_gcal_data');
+//     if (empty($data) == FALSE){
+//       $seed_tickets = array_values($data->data);
+//     }
+//     $orgs_from_gcal = array();
+//     // Get Org IDs from tickets in the view.
+//     foreach ($seed_tickets as $ticket) {
+//       $x = $client->tickets()->find($ticket);
+//       $y = $x->ticket->organization_id;
+//       $z = array_push($orgs_from_gcal, $y);
+//     }
+//   }
+//   catch (ApiResponseException $e) {
+//     watchdog('zendesk_events', 'Grabbing org IDs from Gcal events.');
+//   }
+//   return $orgs_from_gcal;
+// }
+// /**
+//  * Add internal comments or just expire what's currently in the view.
+//  */
+// function add_comment() {
+//   $client = zendesk_client_init();
+//   $gcal_orgs = orgs_from_gcal();
+//   // Return all tickets from our custom Zendesk view.
+//   $tickets_from_zd_view = $client->views(360068822093)->tickets();
+//   // Grab TICKET IDs for each ticket, put them in an array, then print result.
+//   $zd_ticket_ids = array_column($tickets_from_zd_view->tickets, 'id');
+//   // Add some logging.
+//   print "New Tickets to the queue: \n";
+//   print_r($zd_ticket_ids);
+//   // Grab ORG IDs for each ticket, put them in an array, then print result.
+//   $zd_ticket_orgs = array_column($tickets_from_zd_view->tickets, 'organization_id');
+//   // Find ORG ID matches between Google Calendar and the Zendesk view.
+//   $matching_org_ids = array_intersect($zd_ticket_orgs, $gcal_orgs);
+//   if (empty($matching_org_ids) == FALSE) {
+//     // For tickets that have matches, Send update & tag ticket as event:yes.
+//     foreach ($tickets_from_zd_view->tickets as $ticket) {
+//       $array = array();
+//       $x = $ticket->id;
+//       $y = $ticket->organization_id;
+//       $z = array_push($array, $x);
+//       if (in_array($y, $gcal_orgs)) {
+//         $client->tickets()->updateMany([
+//           'ids'    => $array,
+//           'comment'  => [
+//             'body' => "**Automated Ticket Notification**
+//                                     This customer may be having a High Traffic event right now. Please check the `Customers` calendar for more information.",
+//                         // Eventually add original ticket details here
+//                         // Associated Event Notification ticket: #$ticket->id
+//                         // Title of Associated Ticket: $ticket->subject,.
+//             'public' => FALSE,
+//           ],
+//           'additional_tags' => ['event:yes'],
+//         ]);
+//         watchdog('zendesk_events', 'There are event/ticket matches.');
+//         print "Tickets with Event Matches: \n";
+//         print_r($array);
+//       }
+//     }
+//   }
+//   if (empty($matching_org_ids) && empty($zd_ticket_ids) == FALSE) {
+//     // No match, set event:no tag.
+//       $client->tickets()->updateMany([
+//         'ids' => $zd_ticket_ids,
+//         'additional_tags' => ['event:no'],
+//       ]);
+//   }
+//   return $matching_org_ids;
+// }
+//
+// /**
+//  * Master function: `drush zd-command` will run in this function.
+//  */
+// function drush_zendesk_events_zd_command() {
+//   // Take the TICKET IDs from Google Calendar and grab ORG IDs from Zendesk.
+//   orgs_from_gcal();
+//   // Put in here the master function you want drush to run.
+//   add_comment();
+// }
 
-/**
- * Master function: `drush zd-command` will run in this function.
- */
-function drush_zendesk_events_zd_command() {
-  // Take the TICKET IDs from Google Calendar and grab ORG IDs from Zendesk.
-  orgs_from_gcal();
-  // Put in here the master function you want drush to run.
-  add_comment();
-}
-
- function event_tickets_from_zendesk() {
-    $client = zendesk_client_init();
-    # how long, in seconds, should these cached objects last?
-    $cache_lifetime = 3600;
-    # establish the current time as a unix timestamp.
-    $current_time = time();
-    // WILL NEED TO ADD NEW VIEW WITH TICKET TYPE EVENT
-    $tickets_from_events_view = $client->views(360068822093)->tickets();
-    $new_events_notification_array = array();
-    $tickets_to_close = array();
-
-    foreach($tickets_from_events_view->tickets as $ticket) {
-        $ticket_info = array();
-        $id = $ticket->id;
-        array_push($tickets_to_close, $id);
-        $org_id = $ticket->organization_id;
-        $subject =  $ticket->subject;
-        $description = $ticket->description;
-
-        foreach($ticket->custom_fields as $custom_field){
-          if ($custom_field->id == 360016075373) {
-             $start_date = $custom_field->value;
-          } else if ($custom_field->id == 360016075393) {
-             $end_date = $custom_field->value;
-          } continue;
-        }
-        array_push($ticket_info, $id, $subject, $description, $start_date, $end_date);
-        array_push($new_events_notification_array, $ticket_info);
-    }
-
-    cache_set('cached_event_tickets', $new_events_notification_array, 'cache', $current_time + $cache_lifetime);
-
-// UPDATE THE ZENDESK TICKETS TO AUTOCLOSE AFTER BEING ADDED TO THE CALENDAR
-
-    try {
-        // print_r($tickets_from_events_view);
-        $updatedTickets = $client->tickets()->updateMany(
-            [
-              'ids'    => $tickets_to_close,
-              'assignee_id' => 370668600233,
-              'status' => 'solved',
-              // Find out what else is required for close
-            ]
-        );
-        // print_r($updatedTickets->job_status);
-        }
-    catch (\Zendesk\API\Exceptions\ApiResponseException $e) {
-    echo "API Response (event notification autosolve): ".$e->getMessage().'</br>';
-    }
-  }
-
-// event_tickets_from_zendesk();
-
-function drush_zendesk_events_zd_fetch()
-{
-    //GET Zendesk Tickets with Event Type
-    event_tickets_from_zendesk();
-    drush_print("zendesk fetch function run");
- }
+//  function event_tickets_from_zendesk() {
+//     $client = zendesk_client_init();
+//     # how long, in seconds, should these cached objects last?
+//     $cache_lifetime = 3600;
+//     # establish the current time as a unix timestamp.
+//     $current_time = time();
+//     // WILL NEED TO ADD NEW VIEW WITH TICKET TYPE EVENT
+//     $tickets_from_events_view = $client->views(360068822093)->tickets();
+//     $new_events_notification_array = array();
+//     $tickets_to_close = array();
+//
+//     foreach($tickets_from_events_view->tickets as $ticket) {
+//         $ticket_info = array();
+//         $id = $ticket->id;
+//         array_push($tickets_to_close, $id);
+//         $org_id = $ticket->organization_id;
+//         $subject =  $ticket->subject;
+//         $description = $ticket->description;
+//
+//         foreach($ticket->custom_fields as $custom_field){
+//           if ($custom_field->id == 360016075373) {
+//              $start_date = $custom_field->value;
+//           } else if ($custom_field->id == 360016075393) {
+//              $end_date = $custom_field->value;
+//           } continue;
+//         }
+//         array_push($ticket_info, $id, $subject, $description, $start_date, $end_date);
+//         array_push($new_events_notification_array, $ticket_info);
+//     }
+//
+//     cache_set('cached_event_tickets', $new_events_notification_array, 'cache', $current_time + $cache_lifetime);
+//
+// // UPDATE THE ZENDESK TICKETS TO AUTOCLOSE AFTER BEING ADDED TO THE CALENDAR
+//
+//     try {
+//         // print_r($tickets_from_events_view);
+//         $updatedTickets = $client->tickets()->updateMany(
+//             [
+//               'ids'    => $tickets_to_close,
+//               'assignee_id' => 370668600233,
+//               'status' => 'solved',
+//               // Find out what else is required for close
+//             ]
+//         );
+//         // print_r($updatedTickets->job_status);
+//         }
+//     catch (\Zendesk\API\Exceptions\ApiResponseException $e) {
+//     echo "API Response (event notification autosolve): ".$e->getMessage().'</br>';
+//     }
+//   }
+//
+// // event_tickets_from_zendesk();
+//
+// function drush_zendesk_events_zd_fetch()
+// {
+//     //GET Zendesk Tickets with Event Type
+//     event_tickets_from_zendesk();
+//     drush_print("zendesk fetch function run");
+//  }
