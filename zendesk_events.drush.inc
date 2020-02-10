@@ -48,8 +48,8 @@ function zendesk_events_orgs_from_gcal() {
      $client = zendesk_client_init();
      $orgs_from_gcal = array();
      // Grab the current calendar_events.module generated TICKET IDs from cache.
-     $data = cache_get('cached_gcal_data');
-     if (empty($data) == FALSE) {
+     $data = cache_get('calendar_events_gcal_data');
+     if (!empty($data)) {
        // Get Org IDs from tickets in the view.
        $seed_tickets = array_values($data->data);
        foreach ($seed_tickets as $ticket) {
@@ -59,50 +59,55 @@ function zendesk_events_orgs_from_gcal() {
        }
      }
    }
-   catch (ApiResponseException $zd_e) {
-     watchdog_exception($zd_e);
-     drush_print($zd_e);
+   catch (Throwable $zd_e) {
+     watchdog_exception("zendesk_events", $zd_e);
+     drush_print_r($zd_e);
    }
    return $orgs_from_gcal;
  }
- /**
+
+  /**
   * Add internal comments or just expire what's currently in the view.
   */
 function zendesk_events_add_comment() {
    $client = zendesk_client_init();
    $gcal_orgs = zendesk_events_orgs_from_gcal();
    // Return all tickets from our custom Zendesk view.
+   $zendesk_view_id = 360068822093;
+   if (empty($zendesk_view_id)) {
+     drush_print("No Zendesk View found.");
+     return;
+   }
    try {
-     $tickets_from_zd_view = $client->views(360068822093)->tickets();
-    } catch (ApiResponseException $view_e) {
-      watchdog_exception($view_e);
-      drush_print($view_e);
-    }
+     $tickets_from_zd_view = $client->views($zendesk_view_id)->tickets();
+   }
+   catch (ApiResponseException $view_e) {
+     watchdog_exception("zendesk_events", $view_e);
+   }
     // Grab TICKET IDs for each ticket, put them in an array, then print result.
     $zd_ticket_ids = array_column($tickets_from_zd_view->tickets, 'id');
-    // Add some logging.
-    drush_print("New Tickets to the queue:");
-    if (!empty($zd_ticket_ids)) {
-      drush_print_r($zd_ticket_ids);
-    }
-    else {
+    if (empty($zd_ticket_ids)) {
       drush_print("No new tickets to the queue.");
+      return;
     }
+    drush_print("New Tickets to the queue:");
+    drush_print_r($zd_ticket_ids);
     // Grab ORG IDs for each ticket, put them in an array, then print result.
     $zd_ticket_orgs = array_column($tickets_from_zd_view->tickets, 'organization_id');
     // Find ORG ID matches between Google Calendar and the Zendesk view.
     $matching_org_ids = array_intersect($zd_ticket_orgs, $gcal_orgs);
     if (!empty($matching_org_ids)) {
+      drush_print("There are event/ticket matches. Tickets with Event Matches:");
       // For tickets that have matches, Send update & tag ticket as event:yes.
       foreach ($tickets_from_zd_view->tickets as $ticket) {
-        $array = array();
+        $match_ticket_ids = array();
         $zd_cal_ticket_find = $ticket->id;
         $org_id = $ticket->organization_id;
-        array_push($array, $zd_cal_ticket_find);
+        array_push($match_ticket_ids, $zd_cal_ticket_find);
         if (in_array($org_id, $gcal_orgs)) {
           try {
          $client->tickets()->updateMany([
-           'ids'    => $array,
+           'ids'    => $match_ticket_ids,
            'comment'  => [
              'body' => "**Automated Ticket Notification**
                                      This customer may be having a High Traffic event right now. Please check the `Customers` calendar for more information.",
@@ -111,27 +116,25 @@ function zendesk_events_add_comment() {
                          // Title of Associated Ticket: $ticket->subject,.
              'public' => FALSE,
            ],
-           'additional_tags' => ['event:yes'],
          ]);
-       } catch (ApiResponseException $match_e) {
-          watchdog_exception($match_e);
-          drush_print($match_e);
-        }
-        drush_print("There are event/ticket matches. Tickets with Event Matches:");
-        drush_print_r($array);
        }
+       catch (ApiResponseException $match_e) {
+         watchdog_exception("zendesk_events", $match_e);
+       }
+       drush_print_r($match_ticket_ids);
      }
    }
+ }
    if (!empty($zd_ticket_ids)) {
      // No match, set event:no tag.
      try {
        $client->tickets()->updateMany([
          'ids' => $zd_ticket_ids,
-         'additional_tags' => ['event:no'],
+         'additional_tags' => ['event:expire'],
        ]);
-     } catch (ApiResponseException $no_match_e) {
-       watchdog_exception($no_match_e);
-       drush_print($no_match_e);
+     }
+     catch (ApiResponseException $no_match_e) {
+       watchdog_exception("zendesk_events", $no_match_e);
      }
    }
    return $matching_org_ids;
